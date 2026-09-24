@@ -54,8 +54,19 @@ const destDir = join(projectRoot, "resources", "central-governance-api");
 
 // Top-level tracked entries actually needed to `uv run` this project and
 // execute its Alembic migrations at runtime. Anything else tracked in the
-// source repo (docs/, README.md, .env.example, .recall/, tests/, ...) is
-// deliberately left out of the bundle — see the module docstring.
+// source repo (docs/, .env.example, .recall/, tests/, ...) is deliberately
+// left out of the bundle — see the module docstring.
+//
+// README.md is here despite not being needed at RUNTIME, because it's
+// needed to even INSTALL: pyproject.toml declares `readme = "README.md"`,
+// and uv's build backend (uv_build) reads that file while building the
+// package the first time `uv sync` runs against this bundle — without it,
+// sync fails outright with "failed to open file ... README.md" (caught by
+// the standalone verification run against the actual packaged bundle,
+// 2026-09-24, after the first allowlist cut this too aggressively). It's
+// general project documentation, not the kind of thing this allowlist is
+// trying to keep out (unimplemented security-architecture detail in docs/,
+// local paths and in-progress state in .recall/).
 const ALLOWED_TOP_LEVEL = new Set([
   "pyproject.toml",
   "uv.lock",
@@ -63,6 +74,7 @@ const ALLOWED_TOP_LEVEL = new Set([
   "alembic.ini",
   "alembic",
   "src",
+  "README.md",
 ]);
 
 function listTrackedFiles(repoDir) {
