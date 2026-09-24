@@ -365,6 +365,18 @@ const config = {
       to: "openhands-sdk-governed/",
       filter: ["**/*"],
     },
+    // central-governance-api (2026-09-24): the OHS Track 1 approval/audit
+    // service. Read-only source + pyproject.toml/uv.lock only — no secrets
+    // (see resources/central-governance-api/'s own .gitignore, respected by
+    // prepackage-central-governance-api.mjs's `git ls-files` copy). It needs
+    // a real DB connection string and OIDC issuer/audience to actually run;
+    // those are supplied at launch via environment variables (main.mjs),
+    // never baked into this bundle — same pattern as VLLM_PROXY_UPSTREAM_URL.
+    {
+      from: "resources/central-governance-api/",
+      to: "central-governance-api/",
+      filter: ["**/*"],
+    },
   ],
 
   // ── macOS ──────────────────────────────────────────────────────────────────
