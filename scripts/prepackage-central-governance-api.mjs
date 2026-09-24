@@ -33,12 +33,25 @@
  * makes that an explicit, reviewable decision instead of an accident of
  * whatever the source repo happens to track next.
  *
+ * README.md is a second-round exception to that allowlist, and it is
+ * SYNTHESIZED here rather than copied from source (2026-09-24, second
+ * code-review round): uv's build backend (uv_build) needs a file at that
+ * path to exist because pyproject.toml declares `readme = "README.md"` —
+ * `uv sync` fails outright without it — but the real README.md is a ~38 KB
+ * engineering log (realm/service-account test identity names, unfinished
+ * deployment controls, round-by-round security review history), exactly
+ * the kind of internal detail this allowlist exists to keep out. Copying
+ * it verbatim (the first fix attempt) satisfied the build but reintroduced
+ * the disclosure concern the allowlist was written to solve. A short,
+ * generic placeholder satisfies uv_build's read without shipping any of
+ * that.
+ *
  * Usage:
  *   node scripts/prepackage-central-governance-api.mjs
  *   CENTRAL_GOVERNANCE_API_PATH=/path/to/central-governance-api node scripts/prepackage-central-governance-api.mjs
  */
 
-import { mkdir, copyFile, rm, stat } from "node:fs/promises";
+import { mkdir, copyFile, rm, stat, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -52,21 +65,13 @@ const sourceDir = process.env.CENTRAL_GOVERNANCE_API_PATH
   : defaultSourceDir;
 const destDir = join(projectRoot, "resources", "central-governance-api");
 
-// Top-level tracked entries actually needed to `uv run` this project and
-// execute its Alembic migrations at runtime. Anything else tracked in the
-// source repo (docs/, .env.example, .recall/, tests/, ...) is deliberately
-// left out of the bundle — see the module docstring.
-//
-// README.md is here despite not being needed at RUNTIME, because it's
-// needed to even INSTALL: pyproject.toml declares `readme = "README.md"`,
-// and uv's build backend (uv_build) reads that file while building the
-// package the first time `uv sync` runs against this bundle — without it,
-// sync fails outright with "failed to open file ... README.md" (caught by
-// the standalone verification run against the actual packaged bundle,
-// 2026-09-24, after the first allowlist cut this too aggressively). It's
-// general project documentation, not the kind of thing this allowlist is
-// trying to keep out (unimplemented security-architecture detail in docs/,
-// local paths and in-progress state in .recall/).
+// Top-level tracked entries copied verbatim from source — actually needed
+// at runtime (pyproject.toml/uv.lock/.python-version for `uv run` to
+// resolve the environment, alembic.ini/alembic/ for migrations, src/ for
+// the app itself). Anything else tracked in the source repo (docs/,
+// README.md, .env.example, .recall/, tests/, ...) is deliberately left out
+// of the bundle — see the module docstring. README.md still ends up in the
+// bundle, but SYNTHESIZED (see PLACEHOLDER_README below), not copied.
 const ALLOWED_TOP_LEVEL = new Set([
   "pyproject.toml",
   "uv.lock",
@@ -74,8 +79,15 @@ const ALLOWED_TOP_LEVEL = new Set([
   "alembic.ini",
   "alembic",
   "src",
-  "README.md",
 ]);
+
+const PLACEHOLDER_README = `# central-governance-api
+
+OHS central governance API — approval and audit service.
+
+This bundled copy contains no documentation beyond this file by design;
+see the project's own repository for full documentation.
+`;
 
 function listTrackedFiles(repoDir) {
   const out = execFileSync("git", ["ls-files", "-z"], {
@@ -137,10 +149,13 @@ async function main() {
     await copyFile(src, dest);
   }
 
+  // Synthesized, not copied from source — see PLACEHOLDER_README above.
+  await writeFile(join(destDir, "README.md"), PLACEHOLDER_README, "utf-8");
+
   const mb = (await dirSizeBytes(toCopy, sourceDir)) / (1024 * 1024);
   console.log(
     `[prepackage-central-governance-api] Done: ${toCopy.length} files (of ${tracked.length} tracked, ` +
-      `allowlisted to ${[...ALLOWED_TOP_LEVEL].join(", ")}), ~${mb.toFixed(1)} MB`,
+      `allowlisted to ${[...ALLOWED_TOP_LEVEL].join(", ")}) + a synthesized README.md, ~${mb.toFixed(1)} MB`,
   );
 }
 

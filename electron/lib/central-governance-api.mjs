@@ -303,11 +303,18 @@ export async function startCentralGovernanceApi({
   );
   registerChild(child);
 
+  // "stdout"/"stderr", not "info"/"error" (small o's review, second round,
+  // 2026-09-24): uvicorn writes its normal startup banner to stderr, and
+  // main.mjs's handleServiceLog only escalates level:"error" lines into
+  // the user-facing recentServiceErrors list — tagging every stderr line
+  // "error" would flag a perfectly healthy startup as a failure. Mirrors
+  // dev-with-automation.mjs's spawnService(), which reserves "error" for
+  // an actual spawn failure or non-zero exit (both handled below).
   child.stdout?.on("data", (buf) =>
-    forwardLines(buf, (line) => log("central-governance-api", line, "info")),
+    forwardLines(buf, (line) => log("central-governance-api", line, "stdout")),
   );
   child.stderr?.on("data", (buf) =>
-    forwardLines(buf, (line) => log("central-governance-api", line, "error")),
+    forwardLines(buf, (line) => log("central-governance-api", line, "stderr")),
   );
   child.on("exit", (code, signal) => {
     if (code !== 0 && code !== null) {
