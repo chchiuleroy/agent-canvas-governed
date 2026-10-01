@@ -22,6 +22,9 @@ export function ConversationConfirmationButtons() {
   const addSubmittedEventId = useEventMessageStore(
     (state) => state.addSubmittedEventId,
   );
+  const removeSubmittedEventId = useEventMessageStore(
+    (state) => state.removeSubmittedEventId,
+  );
 
   const { t } = useTranslation("openhands");
   const { data: conversation } = useActiveConversation();
@@ -53,22 +56,39 @@ export function ConversationConfirmationButtons() {
       }
 
       // Mark event as submitted to prevent duplicate submissions
-      if (awaitingAction.id) {
-        addSubmittedEventId(awaitingAction.id);
+      const eventId = awaitingAction.id;
+      if (eventId) {
+        addSubmittedEventId(eventId);
       }
 
       // Call the agent-server API endpoint
-      respondToConfirmation({
-        conversationId: conversation.id,
-        conversationUrl: conversation.conversation_url || "",
-        sessionApiKey: conversation.session_api_key,
-        accept,
-      });
+      respondToConfirmation(
+        {
+          conversationId: conversation.id,
+          conversationUrl: conversation.conversation_url || "",
+          sessionApiKey: conversation.session_api_key,
+          accept,
+        },
+        {
+          // The event was marked submitted before the request. If the
+          // request fails (for example a team-mode server refusing a local
+          // accept), the action is still waiting for confirmation, so give
+          // the buttons back instead of leaving it with no way to retry or
+          // reject until a reload. (The global mutation handler already
+          // shows the error.)
+          onError: () => {
+            if (eventId) {
+              removeSubmittedEventId(eventId);
+            }
+          },
+        },
+      );
     },
     [
       awaitingAction,
       conversation,
       addSubmittedEventId,
+      removeSubmittedEventId,
       respondToConfirmation,
       teamMode,
     ],

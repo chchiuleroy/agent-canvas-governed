@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ConversationConfirmationButtons } from "#/components/shared/buttons/conversation-confirmation-buttons";
+import { useEventMessageStore } from "#/stores/event-message-store";
 import { AgentState } from "#/types/agent-state";
 import type { GovernanceStatus } from "#/types/governance";
 
@@ -9,10 +10,8 @@ const mocks = vi.hoisted(() => ({
   governance: undefined as GovernanceStatus | null | undefined,
 }));
 
-vi.mock("#/stores/event-message-store", () => ({
-  useEventMessageStore: (selector: (s: unknown) => unknown) =>
-    selector({ submittedEventIds: [], addSubmittedEventId: vi.fn() }),
-}));
+// The real event-message store is used on purpose: the "buttons come back
+// after a failed response" behavior is a round trip through it.
 vi.mock("#/stores/use-event-store", () => ({
   useEventStore: (selector: (s: unknown) => unknown) =>
     selector({ events: [{ id: "ev-1", source: "agent" }] }),
@@ -44,9 +43,16 @@ const teamStatus: GovernanceStatus = {
   central_api: null,
 };
 
+// mutate(variables, options): the component passes per-call options as well.
+const calledWith = (variables: Record<string, unknown>) => [
+  expect.objectContaining(variables),
+  expect.anything(),
+];
+
 beforeEach(() => {
   mocks.respond.mockReset();
   mocks.governance = undefined;
+  useEventMessageStore.setState({ submittedEventIds: [] });
 });
 
 describe("ConversationConfirmationButtons", () => {
@@ -71,7 +77,7 @@ describe("ConversationConfirmationButtons", () => {
     fireEvent.click(screen.getByTestId("action-confirm-button"));
 
     expect(mocks.respond).toHaveBeenCalledWith(
-      expect.objectContaining({ conversationId: "conv-1", accept: true }),
+      ...calledWith({ conversationId: "conv-1", accept: true }),
     );
   });
 
@@ -94,7 +100,7 @@ describe("ConversationConfirmationButtons", () => {
     fireEvent.click(screen.getByTestId("action-reject-button"));
 
     expect(mocks.respond).toHaveBeenCalledWith(
-      expect.objectContaining({ conversationId: "conv-1", accept: false }),
+      ...calledWith({ conversationId: "conv-1", accept: false }),
     );
   });
 
@@ -112,8 +118,63 @@ describe("ConversationConfirmationButtons", () => {
 
     fireEvent.keyDown(document, { key: "Enter", metaKey: true });
 
-    expect(mocks.respond).toHaveBeenCalledWith(
-      expect.objectContaining({ accept: true }),
-    );
+    expect(mocks.respond).toHaveBeenCalledWith(...calledWith({ accept: true }));
+  });
+
+  describe("submission state", () => {
+    it("hides the buttons while a response is in flight", () => {
+      // mutate never calls back: the request is still pending.
+      render(<ConversationConfirmationButtons />);
+
+      fireEvent.click(screen.getByTestId("action-confirm-button"));
+
+      expect(screen.queryByTestId("action-confirm-button")).toBeNull();
+      expect(screen.queryByTestId("action-reject-button")).toBeNull();
+    });
+
+    it("brings the buttons back when the response fails", () => {
+      // Why: the event is marked submitted BEFORE the request, so without a
+      // rollback a failed response (for example the 403 an unrecognised team
+      // mode server answers a local accept with) left the action waiting for
+      // confirmation with no way to retry or reject until a reload.
+      mocks.respond.mockImplementation(
+        (_variables: unknown, options?: { onError?: (e: Error) => void }) =>
+          options?.onError?.(new Error("403")),
+      );
+      render(<ConversationConfirmationButtons />);
+
+      fireEvent.click(screen.getByTestId("action-confirm-button"));
+
+      expect(screen.getByTestId("action-confirm-button")).toBeInTheDocument();
+      expect(screen.getByTestId("action-reject-button")).toBeInTheDocument();
+      expect(useEventMessageStore.getState().submittedEventIds).toEqual([]);
+    });
+
+    it("also brings the buttons back when a reject fails", () => {
+      mocks.respond.mockImplementation(
+        (_variables: unknown, options?: { onError?: (e: Error) => void }) =>
+          options?.onError?.(new Error("network")),
+      );
+      render(<ConversationConfirmationButtons />);
+
+      fireEvent.click(screen.getByTestId("action-reject-button"));
+
+      expect(screen.getByTestId("action-reject-button")).toBeInTheDocument();
+    });
+
+    it("keeps the buttons hidden when the response succeeds", () => {
+      mocks.respond.mockImplementation(
+        (_variables: unknown, options?: { onSuccess?: () => void }) =>
+          options?.onSuccess?.(),
+      );
+      render(<ConversationConfirmationButtons />);
+
+      fireEvent.click(screen.getByTestId("action-confirm-button"));
+
+      expect(screen.queryByTestId("action-confirm-button")).toBeNull();
+      expect(useEventMessageStore.getState().submittedEventIds).toEqual([
+        "ev-1",
+      ]);
+    });
   });
 });

@@ -10,8 +10,6 @@ export const QUERY_KEYS = {
   WEB_CLIENT_CONFIG: ["web-client-config"] as const,
   /** Same-origin OpenHands app cookie authentication status */
   MAIN_APP_COOKIE_AUTH: ["main-app-cookie-auth"] as const,
-  /** Governance (personal/team) status of the local agent-server */
-  GOVERNANCE_STATUS: ["governance-status"] as const,
 } as const;
 
 export const SETTINGS_QUERY_KEYS = {
@@ -70,6 +68,18 @@ export const CANVAS_EXTENSIONS_QUERY_KEYS = {
       orgId,
       connectionRevision,
     ] as const,
+} as const;
+
+export const GOVERNANCE_QUERY_KEYS = {
+  all: ["governance"] as const,
+  /**
+   * Personal/team status of the local agent-server. Keyed on
+   * `connectionRevision` like the other backend-scoped queries: editing the
+   * active backend's host or API key keeps its id but points at a different
+   * server.
+   */
+  status: (backendId: string, connectionRevision: number) =>
+    ["governance", "status", backendId, connectionRevision] as const,
 } as const;
 
 export const SETUP_QUERY_KEYS = {

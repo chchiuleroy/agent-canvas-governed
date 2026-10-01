@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import GovernanceService from "#/api/governance-service/governance-service.api";
 import { useActiveBackend } from "#/contexts/active-backend-context";
-import { QUERY_KEYS } from "./query-keys";
+import { GOVERNANCE_QUERY_KEYS } from "./query-keys";
 
 // The status probes central-governance-api server-side, so polling is what
 // turns "central API died" into something the user can see.
@@ -19,7 +19,10 @@ const GOVERNANCE_STATUS_REFETCH_MS = 30_000;
 export function useGovernanceStatus() {
   const { backend } = useActiveBackend();
   return useQuery({
-    queryKey: [...QUERY_KEYS.GOVERNANCE_STATUS, backend.id],
+    queryKey: GOVERNANCE_QUERY_KEYS.status(
+      backend.id,
+      backend.connectionRevision ?? 0,
+    ),
     queryFn: () => GovernanceService.getStatus(),
     enabled: backend.kind === "local",
     retry: false,
