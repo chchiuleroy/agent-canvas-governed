@@ -144,6 +144,15 @@ jobs:
           set -euo pipefail
           git clone --depth 1 --branch governance-layer             "https://github.com/${{ github.repository_owner }}/software-agent-sdk.git"             "$RUNNER_TEMP/openhands-sdk-governed"
           echo "OH_AGENT_SERVER_LOCAL_PATH=$RUNNER_TEMP/openhands-sdk-governed" >> "$GITHUB_ENV"
+          # The governed analyzer rates every terminal command HIGH and the
+          # default policy then waits for an approval no test gives (run
+          # 36820603643: conversations start, but "No successful bash
+          # execution" - 7 failed, 12 not run, job timeout). The SDK has a
+          # machine-level lock for exactly this (security/roy_governance_lock.py):
+          # confirmation off means NeverConfirm. This e2e covers the UI and the
+          # conversation plumbing, NOT the approval path; that path is covered
+          # by the SDK and central-governance-api test suites.
+          echo "ROY_GOVERNANCE_LOCK_CONFIRMATION_MODE=false" >> "$GITHUB_ENV"
 
       - name: Pre-warm the governed agent-server (uvx cache)
         # The local-path launch rebuilds editable installs of four packages
