@@ -144,14 +144,19 @@ jobs:
           set -euo pipefail
           git clone --depth 1 --branch governance-layer             "https://github.com/${{ github.repository_owner }}/software-agent-sdk.git"             "$RUNNER_TEMP/openhands-sdk-governed"
           echo "OH_AGENT_SERVER_LOCAL_PATH=$RUNNER_TEMP/openhands-sdk-governed" >> "$GITHUB_ENV"
-          # The governed analyzer rates every terminal command HIGH and the
-          # default policy then waits for an approval no test gives (run
-          # 36820603643: conversations start, but "No successful bash
-          # execution" - 7 failed, 12 not run, job timeout). The SDK has a
-          # machine-level lock for exactly this (security/roy_governance_lock.py):
-          # confirmation off means NeverConfirm. This e2e covers the UI and the
-          # conversation plumbing, NOT the approval path; that path is covered
-          # by the SDK and central-governance-api test suites.
+          # EXPERIMENT, not a diagnosis. Confirmation is switched off for this
+          # e2e with the SDK's machine-level lock (security/roy_governance_lock.py:
+          # false -> NeverConfirm; unset -> ConfirmRisky, checked locally). The
+          # reasoning was that the governed analyzer rates every terminal command
+          # HIGH, so the default policy would wait for an approval no test gives.
+          # That did NOT explain the failures: with the lock set the suite still
+          # ended 53/70 (run 36823074718). The cause was a 30s event-loop
+          # self-deadlock on secret lookups in the SDK (fixed there), so whether
+          # this lock is needed at all is unknown until the e2e is rerun against
+          # the fixed SDK with the variable unset.
+          # While it is set this e2e does NOT exercise the approval path
+          # (WAITING_FOR_CONFIRMATION): no mock-LLM spec asserts it, so a green
+          # run here is not evidence about it.
           echo "ROY_GOVERNANCE_LOCK_CONFIRMATION_MODE=false" >> "$GITHUB_ENV"
 
       - name: Pre-warm the governed agent-server (uvx cache)
