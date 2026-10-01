@@ -8,6 +8,12 @@
     "**/.client/**/*.tsx",
     ".react-router/types/**/*"
   ],
+  // Machine-local build output: `resources/` holds the packaged SDK copies
+  // (gitignored) and `dist-electron/` the installer. Both contain thousands of
+  // files tsc cannot check, which made `typecheck:staged` fail on any
+  // checkout that has been packaged. Listing `exclude` replaces the default,
+  // so node_modules is repeated.
+  "exclude": ["node_modules", "dist-electron", "resources"],
   "compilerOptions": {
     "lib": ["dom", "dom.iterable", "es2022"],
     "target": "es2022",
