@@ -45,11 +45,15 @@ jobs:
   build-and-push-image:
     name: Build & Push (${{ matrix.arch }})
     # Skip fork PRs — they cannot authenticate to GHCR.
+    # Also skip anywhere but the upstream org: the image name below is fixed to
+    # ghcr.io/openhands/agent-canvas, which other owners cannot push to
+    # ("denied: permission_denied: The requested installation does not exist").
     if: >
-      github.event_name == 'push' ||
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request' &&
-       !github.event.pull_request.head.repo.fork)
+      github.repository_owner == 'OpenHands' &&
+      (github.event_name == 'push' ||
+       github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'pull_request' &&
+        !github.event.pull_request.head.repo.fork))
     strategy:
       fail-fast: false
       matrix:
@@ -253,10 +257,11 @@ jobs:
     name: Merge Multi-Arch Manifests
     needs: build-and-push-image
     if: >
-      github.event_name == 'push' ||
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request' &&
-       !github.event.pull_request.head.repo.fork)
+      github.repository_owner == 'OpenHands' &&
+      (github.event_name == 'push' ||
+       github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'pull_request' &&
+        !github.event.pull_request.head.repo.fork))
     runs-on: ubuntu-24.04
     steps:
       - name: Download build info artifacts
