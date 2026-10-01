@@ -127,6 +127,40 @@ jobs:
           # before the automation backend finishes installing (~60-90s).
           uvx --from "openhands-automation==$AUTOMATION_VERSION" python -c "from openhands.automation.app import app; print('automation package cached')"
 
+      - name: Run the e2e against the governed agent-server SDK
+        # This fork's frontend sends `security_analyzer:
+        # {kind: "RoyPathPayloadSecurityAnalyzer"}` for the default "llm"
+        # option (src/api/agent-server-adapter.ts), on EVERY conversation
+        # start. The stock `openhands-agent-server` that the stack launches
+        # does not know that analyzer, so every test that starts a
+        # conversation failed (main: 11 failed / 48 passed; the same run with
+        # the mapping reverted: 70 passed). Point the stack at the governed
+        # SDK instead, through the upstream-supported
+        # OH_AGENT_SERVER_LOCAL_PATH (scripts/dev-safe.mjs
+        # buildAgentServerCommand), the same SDK the desktop app bundles.
+        # The mock LLM server below still uses the stock openhands-sdk wheel.
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch governance-layer             "https://github.com/${{ github.repository_owner }}/software-agent-sdk.git"             "$RUNNER_TEMP/openhands-sdk-governed"
+          echo "OH_AGENT_SERVER_LOCAL_PATH=$RUNNER_TEMP/openhands-sdk-governed" >> "$GITHUB_ENV"
+
+      - name: Pre-warm the governed agent-server (uvx cache)
+        # The local-path launch rebuilds editable installs of four packages
+        # (`uvx --reinstall --with-editable ...`) and the Playwright webServer
+        # gives the whole stack 180s. Build the same environment once here so
+        # the wheels are in uv's cache, using the stack's own command builder
+        # so this cannot drift from what actually starts.
+        run: |
+          node --input-type=module -e '
+          import { buildAgentServerCommand } from "./scripts/dev-safe.mjs";
+          import { spawnSync } from "node:child_process";
+          const { command, args } = buildAgentServerCommand();
+          const end = args.indexOf("agent-server") + 1;
+          const result = spawnSync(command, [...args.slice(0, end), "--help"], { stdio: "inherit" });
+          process.exit(result.status ?? 1);
+          '
+
       - name: Verify mock LLM server starts
         run: |
           .mock-llm-venv/bin/python3 tests/e2e/mock-llm/scripts/mock-llm-server.py --port 9998 &
