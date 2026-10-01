@@ -12,6 +12,8 @@ import { useActiveConversation } from "#/hooks/query/use-active-conversation";
 import { useAgentState } from "#/hooks/use-agent-state";
 import { useRespondToConfirmation } from "#/hooks/mutation/use-respond-to-confirmation";
 import { SecurityRisk } from "#/types/agent-server/core/base/common";
+import { useGovernanceStatus } from "#/hooks/query/use-governance-status";
+import { isTeamMode } from "#/components/features/governance/governance-status";
 
 export function ConversationConfirmationButtons() {
   const submittedEventIds = useEventMessageStore(
@@ -26,6 +28,12 @@ export function ConversationConfirmationButtons() {
   const { curAgentState } = useAgentState();
   const { mutate: respondToConfirmation } = useRespondToConfirmation();
   const events = useEventStore((state) => state.events);
+  // In team mode the local "continue" is not the approval: central
+  // governance decides and the agent-server resumes on its own, and the
+  // server refuses a local accept without the bridge token anyway. Only an
+  // affirmative team-mode report switches this on; unknown keeps today's UI.
+  const { data: governanceStatus } = useGovernanceStatus();
+  const teamMode = isTeamMode(governanceStatus);
 
   const awaitingAction = events
     .slice()
@@ -38,6 +46,9 @@ export function ConversationConfirmationButtons() {
   const handleConfirmation = useCallback(
     (accept: boolean) => {
       if (!awaitingAction || !conversation) {
+        return;
+      }
+      if (accept && teamMode) {
         return;
       }
 
@@ -54,7 +65,13 @@ export function ConversationConfirmationButtons() {
         accept,
       });
     },
-    [awaitingAction, conversation, addSubmittedEventId, respondToConfirmation],
+    [
+      awaitingAction,
+      conversation,
+      addSubmittedEventId,
+      respondToConfirmation,
+      teamMode,
+    ],
   );
 
   // Handle keyboard shortcuts
@@ -117,18 +134,25 @@ export function ConversationConfirmationButtons() {
         />
       )}
       <div className="flex justify-between items-center">
-        <p className="text-sm font-normal text-white">
-          {t(I18nKey.CHAT_INTERFACE$USER_ASK_CONFIRMATION)}
+        <p
+          className="text-sm font-normal text-white"
+          data-testid={teamMode ? "team-approval-pending" : undefined}
+        >
+          {teamMode
+            ? t(I18nKey.GOVERNANCE$TEAM_APPROVAL_PENDING)
+            : t(I18nKey.CHAT_INTERFACE$USER_ASK_CONFIRMATION)}
         </p>
         <div className="flex items-center gap-3">
           <ActionTooltip
             type="reject"
             onClick={() => handleConfirmation(false)}
           />
-          <ActionTooltip
-            type="confirm"
-            onClick={() => handleConfirmation(true)}
-          />
+          {!teamMode && (
+            <ActionTooltip
+              type="confirm"
+              onClick={() => handleConfirmation(true)}
+            />
+          )}
         </div>
       </div>
     </div>

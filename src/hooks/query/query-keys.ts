@@ -10,6 +10,8 @@ export const QUERY_KEYS = {
   WEB_CLIENT_CONFIG: ["web-client-config"] as const,
   /** Same-origin OpenHands app cookie authentication status */
   MAIN_APP_COOKIE_AUTH: ["main-app-cookie-auth"] as const,
+  /** Governance (personal/team) status of the local agent-server */
+  GOVERNANCE_STATUS: ["governance-status"] as const,
 } as const;
 
 export const SETTINGS_QUERY_KEYS = {
