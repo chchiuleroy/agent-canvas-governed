@@ -46,3 +46,11 @@ build-fresh/
 # Governed software-agent-sdk copy (Roy's governance layer). Copied into place before packaging;
 # it is a build input, not versioned here.
 /resources/openhands-sdk-governed/
+# central-governance-api copy (Roy's governance layer, OHS Track 1). Copied into place before
+# packaging; it is a build input, not versioned here. Also keeps the source repo's own
+# gitignored secrets (.env, ops/) from ever landing in this repo even indirectly.
+/resources/central-governance-api/
+
+# recall skill: context.md is meant to be versioned alongside the code it summarizes;
+# history.md is the full session log, not for a public repo.
+.recall/history.md
