@@ -70,6 +70,18 @@ export const CANVAS_EXTENSIONS_QUERY_KEYS = {
     ] as const,
 } as const;
 
+export const GOVERNANCE_QUERY_KEYS = {
+  all: ["governance"] as const,
+  /**
+   * Personal/team status of the local agent-server. Keyed on
+   * `connectionRevision` like the other backend-scoped queries: editing the
+   * active backend's host or API key keeps its id but points at a different
+   * server.
+   */
+  status: (backendId: string, connectionRevision: number) =>
+    ["governance", "status", backendId, connectionRevision] as const,
+} as const;
+
 export const SETUP_QUERY_KEYS = {
   /** What the deployment supports. The same answer for every setup entry. */
   capabilities: () => ["setup-capabilities"] as const,
