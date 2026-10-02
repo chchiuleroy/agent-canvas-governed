@@ -52,6 +52,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Fetch the sibling repos the governed build bundles
+        # scripts/prepackage-governed-sdk.mjs and
+        # scripts/prepackage-central-governance-api.mjs copy these two repos
+        # into the installer and, by default, look for them next to this one.
+        # CI has only this repo, so clone them (public, shallow) outside the
+        # workspace and point the scripts at them through their env overrides.
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch governance-layer             "https://github.com/${{ github.repository_owner }}/software-agent-sdk.git"             "$RUNNER_TEMP/openhands-sdk-governed"
+          git clone --depth 1 --branch central-governance-api             "https://github.com/${{ github.repository_owner }}/software-agent-sdk.git"             "$RUNNER_TEMP/central-governance-api"
+          echo "GOVERNED_SDK_PATH=$RUNNER_TEMP/openhands-sdk-governed" >> "$GITHUB_ENV"
+          echo "CENTRAL_GOVERNANCE_API_PATH=$RUNNER_TEMP/central-governance-api" >> "$GITHUB_ENV"
+
       - name: Build macOS DMG
         env:
           # Production analytics key only for release builds (same split as

@@ -19,8 +19,10 @@ jobs:
         # Run on drafts too so contributors can iterate on a passing description
         # before requesting review. Bots (dependabot, release-please) write their
         # own bodies and can't follow the HUMAN/AGENT template, so exempt them
-        # rather than failing every such PR.
-        if: github.event.pull_request.user.type != 'Bot'
+        # rather than failing every such PR. The template (HUMAN note, linked
+        # `ready-for-dev` issue, ...) is for outside contributors, so the
+        # repository owner's own PRs are exempt too.
+        if: github.event.pull_request.user.type != 'Bot' && github.event.pull_request.user.login != github.repository_owner
         runs-on: ubuntu-24.04
         steps:
             - name: Checkout trusted workflow scripts

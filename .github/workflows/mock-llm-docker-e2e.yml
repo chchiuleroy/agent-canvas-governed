@@ -87,7 +87,10 @@ jobs:
     #   duplicate (and potentially contradictory) comment pairs.
     # pull_request: skip fork PRs (no GHCR push).
     # workflow_dispatch: always run.
+    # Only where the Docker workflow publishes the image it tests (the
+    # upstream org); elsewhere there is no image to pull.
     if: >-
+      github.repository_owner == 'OpenHands' &&
       (github.event_name == 'workflow_dispatch' ||
        (github.event_name == 'workflow_run' &&
         github.event.workflow_run.conclusion == 'success' &&
