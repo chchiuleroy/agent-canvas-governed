@@ -161,9 +161,14 @@ jobs:
           # While the lock is set this e2e does NOT exercise the approval path
           # (WAITING_FOR_CONFIRMATION): no mock-LLM spec asserts it, so a green
           # run here is not evidence about it.
-          # The suite is not fully green either way: one-off failures in other
-          # specs (cross-connect, files-and-git, image-upload, profile-management,
-          # one each) still occurred and are not explained by this comment.
+          # The numbers above come from diagnostic runs that piped the
+          # agent-server output through Playwright, which this workflow does not
+          # do. In those runs one-off failures also appeared in four other specs
+          # (cross-connect, files-and-git, image-upload, profile-management, one
+          # each). In the configuration as written here (lock set, no piping) 3
+          # full runs passed 70/70, as did 5 runs of the stock agent-server. That
+          # is a small sample; whether the piping caused the one-off failures is
+          # not established.
           echo "ROY_GOVERNANCE_LOCK_CONFIRMATION_MODE=false" >> "$GITHUB_ENV"
 
       - name: Pre-warm the governed agent-server (uvx cache)
