@@ -19,6 +19,10 @@ jobs:
   # problem). Non-release pushes skip the wait entirely: release-please only
   # upserts the release PR on those and never touches a tag.
   await-required-checks:
+    # Both jobs run only in the upstream org: release-please needs that org's release
+    # App (RELEASE_APP_ID / RELEASE_APP_PRIVATE_KEY). Forks do not have it, so it
+    # failed every push to main with "Input required and not supplied: app-id".
+    if: github.repository_owner == 'OpenHands'
     runs-on: ubuntu-latest
     permissions:
       checks: read
@@ -77,6 +81,7 @@ jobs:
 
   release-please:
     needs: await-required-checks
+    if: github.repository_owner == 'OpenHands'
     permissions:
       contents: write
       pull-requests: write
