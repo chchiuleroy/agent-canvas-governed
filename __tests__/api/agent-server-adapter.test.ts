@@ -346,7 +346,7 @@ describe("buildStartConversationRequest", () => {
     expect(toolNames).not.toContain("task_tool_set");
   });
 
-  it("derives confirmation and security settings the same way as OpenHands", () => {
+  it("derives confirmation settings like OpenHands and maps the llm analyzer option to the governed one", () => {
     const payload = buildStartConversationRequest({
       settings: {
         ...DEFAULT_SETTINGS,
@@ -370,8 +370,12 @@ describe("buildStartConversationRequest", () => {
       threshold: "HIGH",
       confirm_unknown: true,
     });
+    // Deliberate difference from upstream OpenHands: in this governed fork the
+    // existing "llm" option selects the deterministic path/payload analyzer
+    // (see the "llm" case in src/api/agent-server-adapter.ts), not the
+    // LLM-judged LLMSecurityAnalyzer.
     expect(payload.security_analyzer).toEqual({
-      kind: "LLMSecurityAnalyzer",
+      kind: "RoyPathPayloadSecurityAnalyzer",
     });
   });
 
