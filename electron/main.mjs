@@ -47,8 +47,12 @@ import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import { startVllmToolcallProxy } from "./lib/vllm-toolcall-proxy.mjs";
+import { startCentralGovernanceApi } from "./lib/central-governance-api.mjs";
 
-import { isExternalBrowsableUrl, isLoopbackAppUrl } from "./lib/window-url-policy.mjs";
+import {
+  isExternalBrowsableUrl,
+  isLoopbackAppUrl,
+} from "./lib/window-url-policy.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -64,6 +68,17 @@ const __dirname = dirname(__filename);
 const projectRoot = app.isPackaged ? __dirname : join(__dirname, "..");
 const buildDir = join(projectRoot, "build");
 const scriptsDir = join(projectRoot, "scripts");
+
+// dev-process-utils.mjs must be loaded via this same scriptsDir-based
+// dynamic import (mirrors startStack()'s import of dev-with-automation.mjs
+// below) rather than a static `import` — a static relative path from this
+// file can't be correct in both dev and packaged mode, since packaging
+// flattens electron/ into the app root and collapses a level of nesting
+// dev mode still has. Node caches dynamic imports by resolved URL, so
+// calling this more than once is cheap.
+function importDevProcessUtils() {
+  return import(pathToFileURL(join(scriptsDir, "dev-process-utils.mjs")).href);
+}
 
 // OpenHands raised-hands app icon, used as the BrowserWindow.icon option.
 // Windows gets the multi-size icon.ico (16→256, small sizes as classic BMP
@@ -672,6 +687,15 @@ const governedSdkPath = app.isPackaged
   ? join(process.resourcesPath, "openhands-sdk-governed")
   : join(__dirname, "..", "..", "openhands-sdk-governed");
 
+// 同一套 sibling-checkout / extraResources 慣例,給 central-governance-api
+// (OHS Track 1 中央治理 API,2026-09-24)。跟 governedSdkPath 不同的是這個
+// 路徑不會被塞進任何環境變數當「唯讀程式碼位置」——它是要被 `uv run` 真正執行
+// 的一個獨立子行程(見 lib/central-governance-api.mjs),所以只在下面
+// startCentralGovernanceApi() 呼叫時當參數傳入。
+const centralGovernanceApiPath = app.isPackaged
+  ? join(process.resourcesPath, "central-governance-api")
+  : join(__dirname, "..", "..", "central-governance-api");
+
 const ROY_GOVERNANCE_DEFAULTS = {
   OH_AGENT_SERVER_LOCAL_PATH: governedSdkPath,
   LLM_BASE_URL: "http://127.0.0.1:8899/v1",
@@ -696,6 +720,23 @@ const vllmToolcallProxy = startVllmToolcallProxy({
 // (dev-with-automation.mjs 內部管的是 agent-server/automation 那些真正的
 // 子行程)互不干擾——Node 允許同一個事件掛多個 listener。
 process.on("SIGTERM", () => vllmToolcallProxy.close());
+
+// central-governance-api 是非同步啟動(見下方 app.whenReady()):migration 跟
+// 真正的 server 子行程是分兩階段各自 spawn 的,SIGTERM 可能在任一階段(甚至
+// 兩者之間)送達。只追蹤最終的 { close() } 不夠——detached 子行程不會跟著
+// Electron 行程樹一起死(這正是需要 detached 的原因,見 dev-process-utils.mjs
+// 的 getProcessTreeSpawnOptions 註解),沒追蹤到的那個階段會變成孤兒行程。
+// registerChild 在 lib/central-governance-api.mjs 內每次 spawn 當下就同步呼叫,
+// 所以這裡用 Set 累積「目前為止 spawn 過的所有子行程」,SIGTERM 時全部訊號一遍
+// (已結束的會被 isProcessRunning 擋掉,訊號兩次也不會出錯)。
+const centralGovernanceApiChildren = new Set();
+process.on("SIGTERM", async () => {
+  if (centralGovernanceApiChildren.size === 0) return;
+  const { signalProcessTree, isProcessRunning } = await importDevProcessUtils();
+  for (const child of centralGovernanceApiChildren) {
+    if (isProcessRunning(child)) signalProcessTree(child, "SIGTERM");
+  }
+});
 
 app.whenReady().then(async () => {
   nativeTheme.themeSource = "dark";
@@ -722,6 +763,38 @@ app.whenReady().then(async () => {
     app.quit();
     return;
   }
+
+  // Fire-and-forget: central-governance-api is not on the critical boot
+  // path (nothing in this app calls it yet — see lib/central-governance-api.mjs's
+  // module docstring), so we never await this here. It logs its own
+  // progress/failures via handleServiceLog like the other backend services.
+  importDevProcessUtils()
+    .then((procUtils) =>
+      startCentralGovernanceApi({
+        projectPath: centralGovernanceApiPath,
+        host: "127.0.0.1",
+        port: 18002,
+        // Not <Resources>/central-governance-api/.venv (small o's 2026-09-24
+        // review, Medium): that directory is meant to be the read-only,
+        // reproducible installer payload — writing a venv there means a
+        // reinstall/update can wipe it, and it's the kind of path that's
+        // outright non-writable on some install layouts (e.g. macOS
+        // /Applications/*.app). userData is per-app, writable, and already
+        // where Electron apps are expected to keep this kind of state.
+        venvDir: join(app.getPath("userData"), "central-governance-api-venv"),
+        env: process.env,
+        log: handleServiceLog,
+        registerChild: (child) => centralGovernanceApiChildren.add(child),
+        procUtils,
+      }),
+    )
+    .catch((err) => {
+      handleServiceLog(
+        "central-governance-api",
+        `Unexpected error: ${err.message}`,
+        "error",
+      );
+    });
 
   createLoadingWindow();
 
@@ -759,7 +832,10 @@ app.whenReady().then(async () => {
     const errorTail = recentServiceErrors.length
       ? `\n\nRecent service errors:\n${recentServiceErrors.join("\n")}`
       : "";
-    dialog.showErrorBox("OpenHands Agent Canvas failed to start", summary + errorTail);
+    dialog.showErrorBox(
+      "OpenHands Agent Canvas failed to start",
+      summary + errorTail,
+    );
     app.quit();
   }
 });
