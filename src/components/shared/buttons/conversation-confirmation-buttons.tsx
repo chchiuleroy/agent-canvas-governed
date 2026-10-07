@@ -12,6 +12,8 @@ import { useActiveConversation } from "#/hooks/query/use-active-conversation";
 import { useAgentState } from "#/hooks/use-agent-state";
 import { useRespondToConfirmation } from "#/hooks/mutation/use-respond-to-confirmation";
 import { SecurityRisk } from "#/types/agent-server/core/base/common";
+import { useGovernanceStatus } from "#/hooks/query/use-governance-status";
+import { isTeamMode } from "#/components/features/governance/governance-status";
 
 export function ConversationConfirmationButtons() {
   const submittedEventIds = useEventMessageStore(
@@ -20,12 +22,21 @@ export function ConversationConfirmationButtons() {
   const addSubmittedEventId = useEventMessageStore(
     (state) => state.addSubmittedEventId,
   );
+  const removeSubmittedEventId = useEventMessageStore(
+    (state) => state.removeSubmittedEventId,
+  );
 
   const { t } = useTranslation("openhands");
   const { data: conversation } = useActiveConversation();
   const { curAgentState } = useAgentState();
   const { mutate: respondToConfirmation } = useRespondToConfirmation();
   const events = useEventStore((state) => state.events);
+  // In team mode the local "continue" is not the approval: central
+  // governance decides and the agent-server resumes on its own, and the
+  // server refuses a local accept without the bridge token anyway. Only an
+  // affirmative team-mode report switches this on; unknown keeps today's UI.
+  const { data: governanceStatus } = useGovernanceStatus();
+  const teamMode = isTeamMode(governanceStatus);
 
   const awaitingAction = events
     .slice()
@@ -40,21 +51,47 @@ export function ConversationConfirmationButtons() {
       if (!awaitingAction || !conversation) {
         return;
       }
+      if (accept && teamMode) {
+        return;
+      }
 
       // Mark event as submitted to prevent duplicate submissions
-      if (awaitingAction.id) {
-        addSubmittedEventId(awaitingAction.id);
+      const eventId = awaitingAction.id;
+      if (eventId) {
+        addSubmittedEventId(eventId);
       }
 
       // Call the agent-server API endpoint
-      respondToConfirmation({
-        conversationId: conversation.id,
-        conversationUrl: conversation.conversation_url || "",
-        sessionApiKey: conversation.session_api_key,
-        accept,
-      });
+      respondToConfirmation(
+        {
+          conversationId: conversation.id,
+          conversationUrl: conversation.conversation_url || "",
+          sessionApiKey: conversation.session_api_key,
+          accept,
+        },
+        {
+          // The event was marked submitted before the request. If the
+          // request fails (for example a team-mode server refusing a local
+          // accept), the action is still waiting for confirmation, so give
+          // the buttons back instead of leaving it with no way to retry or
+          // reject until a reload. (The global mutation handler already
+          // shows the error.)
+          onError: () => {
+            if (eventId) {
+              removeSubmittedEventId(eventId);
+            }
+          },
+        },
+      );
     },
-    [awaitingAction, conversation, addSubmittedEventId, respondToConfirmation],
+    [
+      awaitingAction,
+      conversation,
+      addSubmittedEventId,
+      removeSubmittedEventId,
+      respondToConfirmation,
+      teamMode,
+    ],
   );
 
   // Handle keyboard shortcuts
@@ -117,18 +154,25 @@ export function ConversationConfirmationButtons() {
         />
       )}
       <div className="flex justify-between items-center">
-        <p className="text-sm font-normal text-white">
-          {t(I18nKey.CHAT_INTERFACE$USER_ASK_CONFIRMATION)}
+        <p
+          className="text-sm font-normal text-white"
+          data-testid={teamMode ? "team-approval-pending" : undefined}
+        >
+          {teamMode
+            ? t(I18nKey.GOVERNANCE$TEAM_APPROVAL_PENDING)
+            : t(I18nKey.CHAT_INTERFACE$USER_ASK_CONFIRMATION)}
         </p>
         <div className="flex items-center gap-3">
           <ActionTooltip
             type="reject"
             onClick={() => handleConfirmation(false)}
           />
-          <ActionTooltip
-            type="confirm"
-            onClick={() => handleConfirmation(true)}
-          />
+          {!teamMode && (
+            <ActionTooltip
+              type="confirm"
+              onClick={() => handleConfirmation(true)}
+            />
+          )}
         </div>
       </div>
     </div>
