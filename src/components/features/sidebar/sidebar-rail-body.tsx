@@ -28,6 +28,7 @@ import { BackendSelector } from "#/components/features/backends/backend-selector
 import { BackendStatusDot } from "#/components/features/backends/backend-status-dot";
 import { CommandMenuTrigger } from "#/components/features/command-menu/command-menu-trigger";
 import { AgentCanvasVersionTile } from "#/components/features/settings/agent-canvas-version-tile";
+import { GovernanceAttentionBadge } from "#/components/features/governance/governance-attention-badge";
 import { GovernanceStatusBanner } from "#/components/features/governance/governance-status-banner";
 import { SidebarConversationList } from "./sidebar-conversation-list";
 import { SidebarOnboardingChecklist } from "./sidebar-onboarding-checklist";
@@ -363,6 +364,7 @@ export function SidebarRailBody({
             )}
           >
             <GovernanceStatusBanner />
+            <GovernanceAttentionBadge />
             <AgentCanvasVersionTile hideWhenUpToDate />
             <BackendSelector sidebarCollapsed={collapsed} openUpward />
           </div>

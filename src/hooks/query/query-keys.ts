@@ -80,6 +80,9 @@ export const GOVERNANCE_QUERY_KEYS = {
    */
   status: (backendId: string, connectionRevision: number) =>
     ["governance", "status", backendId, connectionRevision] as const,
+  /** Conversations whose governance outbox needs an operator. */
+  attention: (backendId: string, connectionRevision: number) =>
+    ["governance", "attention", backendId, connectionRevision] as const,
 } as const;
 
 export const SETUP_QUERY_KEYS = {

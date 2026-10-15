@@ -19,3 +19,43 @@ export interface GovernanceStatus {
   /** Present only in team mode. */
   central_api: GovernanceCentralApiStatus | null;
 }
+
+/**
+ * Mirrors the agent-server's `GET /api/governance/attention` items and
+ * `POST /api/governance/attention/{id}/resolve` (openhands-sdk-governed
+ * `governance_attention.py`). Everything here comes from the server or from
+ * what an operator typed: render it as text only.
+ */
+export type GovernanceAttentionAction = "retry" | "abandon" | "dismiss";
+
+export interface GovernanceAttentionItem {
+  conversation_id: string;
+  /** `null` for a record parked before reasons were recorded. */
+  reason: string | null;
+  last_error_code: string | null;
+  central_approval_id: string | null;
+  /** `null` only for an unreadable outbox file. */
+  request_id: string | null;
+  attempt_count: number;
+  last_attempt_at: string | null;
+  /** What the server allows for this record; the UI offers nothing else. */
+  allowed_actions: string[];
+}
+
+export interface GovernanceResolveRequest {
+  action: GovernanceAttentionAction;
+  /** The `request_id` of the item the operator was shown. */
+  expected_request_id: string;
+  note?: string;
+  /** Self-declared, not authenticated. */
+  operator: string;
+}
+
+export interface GovernanceResolveResponse {
+  conversation_id: string;
+  action: GovernanceAttentionAction;
+  request_id: string;
+  new_state: string;
+  central_step: string;
+  conversation_still_waiting: boolean | null;
+}
