@@ -41635,20 +41635,20 @@
     "zh-TW": "這個對話的治理記錄檔無法讀取（損毀、過大、為連結，或由較新版本寫入）。在這裡無法處理。"
   },
   "GOVERNANCE$ATTENTION_REASON_UNKNOWN": {
-    "ar": "This conversation needs attention for a reason this app does not recognise ({{reason}}). It can only be marked as handled.",
-    "ca": "This conversation needs attention for a reason this app does not recognise ({{reason}}). It can only be marked as handled.",
-    "de": "This conversation needs attention for a reason this app does not recognise ({{reason}}). It can only be marked as handled.",
-    "en": "This conversation needs attention for a reason this app does not recognise ({{reason}}). It can only be marked as handled.",
-    "es": "This conversation needs attention for a reason this app does not recognise ({{reason}}). It can only be marked as handled.",
-    "fr": "This conversation needs attention for a reason this app does not recognise ({{reason}}). It can only be marked as handled.",
-    "it": "This conversation needs attention for a reason this app does not recognise ({{reason}}). It can only be marked as handled.",
-    "ja": "This conversation needs attention for a reason this app does not recognise ({{reason}}). It can only be marked as handled.",
-    "ko-KR": "This conversation needs attention for a reason this app does not recognise ({{reason}}). It can only be marked as handled.",
-    "no": "This conversation needs attention for a reason this app does not recognise ({{reason}}). It can only be marked as handled.",
-    "pt": "This conversation needs attention for a reason this app does not recognise ({{reason}}). It can only be marked as handled.",
-    "tr": "This conversation needs attention for a reason this app does not recognise ({{reason}}). It can only be marked as handled.",
-    "uk": "This conversation needs attention for a reason this app does not recognise ({{reason}}). It can only be marked as handled.",
-    "zh-CN": "This conversation needs attention for a reason this app does not recognise ({{reason}}). It can only be marked as handled.",
-    "zh-TW": "這個對話需要處理，但這個程式不認得原因（{{reason}}）。只能標記為已處理。"
+    "ar": "This conversation needs attention for a reason this app does not recognise ({{reason}}). Use only the actions offered below, and check the details at central first.",
+    "ca": "This conversation needs attention for a reason this app does not recognise ({{reason}}). Use only the actions offered below, and check the details at central first.",
+    "de": "This conversation needs attention for a reason this app does not recognise ({{reason}}). Use only the actions offered below, and check the details at central first.",
+    "en": "This conversation needs attention for a reason this app does not recognise ({{reason}}). Use only the actions offered below, and check the details at central first.",
+    "es": "This conversation needs attention for a reason this app does not recognise ({{reason}}). Use only the actions offered below, and check the details at central first.",
+    "fr": "This conversation needs attention for a reason this app does not recognise ({{reason}}). Use only the actions offered below, and check the details at central first.",
+    "it": "This conversation needs attention for a reason this app does not recognise ({{reason}}). Use only the actions offered below, and check the details at central first.",
+    "ja": "This conversation needs attention for a reason this app does not recognise ({{reason}}). Use only the actions offered below, and check the details at central first.",
+    "ko-KR": "This conversation needs attention for a reason this app does not recognise ({{reason}}). Use only the actions offered below, and check the details at central first.",
+    "no": "This conversation needs attention for a reason this app does not recognise ({{reason}}). Use only the actions offered below, and check the details at central first.",
+    "pt": "This conversation needs attention for a reason this app does not recognise ({{reason}}). Use only the actions offered below, and check the details at central first.",
+    "tr": "This conversation needs attention for a reason this app does not recognise ({{reason}}). Use only the actions offered below, and check the details at central first.",
+    "uk": "This conversation needs attention for a reason this app does not recognise ({{reason}}). Use only the actions offered below, and check the details at central first.",
+    "zh-CN": "This conversation needs attention for a reason this app does not recognise ({{reason}}). Use only the actions offered below, and check the details at central first.",
+    "zh-TW": "這個對話需要處理，但這個程式不認得原因（{{reason}}）。請只使用下方提供的動作，並先到中央確認細節。"
   }
 }

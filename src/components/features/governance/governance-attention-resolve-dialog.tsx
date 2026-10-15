@@ -66,6 +66,12 @@ export function GovernanceAttentionResolveDialog({
 
   const reason = reasonText(item.reason);
 
+  // Closing while the request runs would unmount the dialog before its result
+  // arrives: the outcome (and the "still waiting" warning) would be lost.
+  const close = () => {
+    if (!resolve.isPending) onClose();
+  };
+
   const confirm = () => {
     if (!canConfirm || cleanName === null || item.request_id === null) return;
     setFailure(null);
@@ -104,9 +110,9 @@ export function GovernanceAttentionResolveDialog({
     <div className="fixed inset-0 z-[60] flex items-center justify-center">
       <div
         className="absolute inset-0 bg-black/60"
-        onClick={onClose}
+        onClick={close}
         onKeyDown={(e) => {
-          if (e.key === "Escape") onClose();
+          if (e.key === "Escape") close();
         }}
         role="presentation"
       />
@@ -118,7 +124,7 @@ export function GovernanceAttentionResolveDialog({
       >
         <button
           type="button"
-          onClick={onClose}
+          onClick={close}
           className="absolute right-4 top-4 text-muted hover:text-foreground"
           aria-label={t(I18nKey.BUTTON$CLOSE)}
         >
@@ -189,7 +195,7 @@ export function GovernanceAttentionResolveDialog({
         <div className="mt-6 flex justify-end gap-3">
           <button
             type="button"
-            onClick={onClose}
+            onClick={close}
             className="rounded-lg border border-[var(--oh-border)] px-4 py-2 text-sm text-white hover:bg-surface-raised"
           >
             {resolve.isSuccess

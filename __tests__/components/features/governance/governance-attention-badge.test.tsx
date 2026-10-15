@@ -156,6 +156,19 @@ describe("the panel", () => {
     ).toBeNull();
   });
 
+  it("still offers exactly what the server allows for a reason it does not know", async () => {
+    mocks.data = [
+      item({
+        reason: "from_a_newer_server",
+        allowed_actions: ["retry", "dismiss"],
+      }),
+    ];
+    await open();
+    expect(screen.getByTestId("governance-attention-retry")).toBeVisible();
+    expect(screen.getByTestId("governance-attention-dismiss")).toBeVisible();
+    expect(screen.queryByTestId("governance-attention-abandon")).toBeNull();
+  });
+
   it("opens the confirmation for the chosen action only", async () => {
     mocks.data = [item()];
     await open();

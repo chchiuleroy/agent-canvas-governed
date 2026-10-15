@@ -231,4 +231,32 @@ describe("GovernanceAttentionResolveDialog", () => {
     expect(mocks.resolveAttention).toHaveBeenCalledTimes(1);
     finish({ ...OK, action: "retry" });
   });
+
+  it("cannot be closed while the request is running, so its outcome is not lost", async () => {
+    let finish: (v: unknown) => void = () => {};
+    mocks.resolveAttention.mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const { onClose } = setup("dismiss");
+    await typeOperator("ada");
+    await typeNote("why");
+    await userEvent.click(confirm());
+    await waitFor(() => expect(confirm()).toBeDisabled());
+
+    await userEvent.click(screen.getByText("GOVERNANCE$ATTENTION_CANCEL"));
+    await userEvent.click(screen.getByLabelText("BUTTON$CLOSE"));
+    await userEvent.keyboard("{Escape}");
+    document.querySelector<HTMLElement>("[role=presentation]")?.click();
+    expect(onClose).not.toHaveBeenCalled();
+
+    finish({ ...OK, conversation_still_waiting: true });
+    expect(
+      await screen.findByText("GOVERNANCE$ATTENTION_STILL_WAITING"),
+    ).toBeVisible();
+    // once it is finished the operator can close it
+    await userEvent.click(screen.getByLabelText("BUTTON$CLOSE"));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });
