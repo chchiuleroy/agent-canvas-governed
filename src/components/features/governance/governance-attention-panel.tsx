@@ -15,6 +15,7 @@ import type {
 } from "#/types/governance";
 import {
   ACTION_LABEL,
+  isConversationUuid,
   reasonText,
   visibleActions,
 } from "./governance-attention";
@@ -103,7 +104,8 @@ export function GovernanceAttentionPanel({ items, onClose }: Props) {
                     </p>
                   ) : null}
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {known !== undefined ? (
+                    {known !== undefined &&
+                    isConversationUuid(item.conversation_id) ? (
                       <button
                         type="button"
                         data-testid="governance-attention-open"

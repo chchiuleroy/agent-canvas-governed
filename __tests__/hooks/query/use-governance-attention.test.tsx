@@ -156,6 +156,21 @@ describe("useGovernanceAttentionTitles", () => {
     ]);
   });
 
+  it("asks again when the set of conversations changes", async () => {
+    // a new parked conversation must get its title; the old answer is not reused
+    batchGet.mockResolvedValue([]);
+    let ids = ["a"];
+    const { rerender } = renderHook(() => useGovernanceAttentionTitles(ids), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(batchGet).toHaveBeenCalledTimes(1));
+
+    ids = ["a", "b"];
+    rerender();
+    await waitFor(() => expect(batchGet).toHaveBeenCalledTimes(2));
+    expect(batchGet).toHaveBeenLastCalledWith(["a", "b"]);
+  });
+
   it("does not ask when there is nothing to look up or on a cloud backend", async () => {
     renderHook(() => useGovernanceAttentionTitles([]), {
       wrapper: makeWrapper(),

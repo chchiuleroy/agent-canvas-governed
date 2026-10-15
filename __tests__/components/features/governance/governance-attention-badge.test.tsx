@@ -212,6 +212,17 @@ describe("the panel", () => {
     ).toContain("11111111-1111-1111-1111-111111111111");
   });
 
+  it.each(["..", ".", "a/b", "x?y", "not-a-uuid"])(
+    "offers no link for an id that is not a UUID (%s), even when a title is known",
+    async (id) => {
+      mocks.data = [item({ conversation_id: id })];
+      mocks.titles = { [id.replaceAll("-", "").toLowerCase()]: "Some title" };
+      await open();
+      expect(screen.getByTestId("governance-attention-title")).toBeVisible();
+      expect(screen.queryByTestId("governance-attention-open")).toBeNull();
+    },
+  );
+
   it("shows a hostile title as text, not markup", async () => {
     const hostile = '<img src=x onerror="window.__pwned=2">';
     mocks.data = [item()];
