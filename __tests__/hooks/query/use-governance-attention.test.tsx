@@ -3,7 +3,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useGovernanceAttention } from "#/hooks/query/use-governance-attention";
+import {
+  normalizeConversationId,
+  useGovernanceAttention,
+  useGovernanceAttentionTitles,
+} from "#/hooks/query/use-governance-attention";
 
 const backendMock = vi.hoisted(() => ({
   current: {
@@ -23,6 +27,16 @@ const statusMock = vi.hoisted(() => ({ data: undefined as unknown }));
 vi.mock("#/hooks/query/use-governance-status", () => ({
   useGovernanceStatus: () => ({ data: statusMock.data }),
 }));
+
+const batchGet = vi.hoisted(() => vi.fn());
+vi.mock(
+  "#/api/conversation-service/agent-server-conversation-service.api",
+  () => ({
+    default: {
+      batchGetAppConversations: (...args: unknown[]) => batchGet(...args),
+    },
+  }),
+);
 
 const getAttention = vi.hoisted(() => vi.fn());
 vi.mock("#/api/governance-service/governance-service.api", () => ({
@@ -109,5 +123,84 @@ describe("useGovernanceAttention", () => {
     rerender();
 
     await waitFor(() => expect(getAttention).toHaveBeenCalledTimes(2));
+  });
+});
+
+describe("useGovernanceAttentionTitles", () => {
+  it("asks once, for each id once and in a fixed order, and keys the answer by a normalised id", async () => {
+    batchGet.mockResolvedValue([
+      { id: "BBBBBBBB-0000-0000-0000-000000000000", title: "Second" },
+      null,
+      { id: "aaaaaaaa000000000000000000000000", title: null },
+    ]);
+    const { result } = renderHook(
+      () =>
+        useGovernanceAttentionTitles([
+          "bbbbbbbb-0000-0000-0000-000000000000",
+          "aaaaaaaa-0000-0000-0000-000000000000",
+          "bbbbbbbb-0000-0000-0000-000000000000",
+        ]),
+      { wrapper: makeWrapper() },
+    );
+
+    await waitFor(() =>
+      expect(result.current.data).toEqual({
+        bbbbbbbb000000000000000000000000: "Second",
+        aaaaaaaa000000000000000000000000: null,
+      }),
+    );
+    expect(batchGet).toHaveBeenCalledTimes(1);
+    expect(batchGet).toHaveBeenCalledWith([
+      "aaaaaaaa-0000-0000-0000-000000000000",
+      "bbbbbbbb-0000-0000-0000-000000000000",
+    ]);
+  });
+
+  it("asks again when the set of conversations changes", async () => {
+    // a new parked conversation must get its title; the old answer is not reused
+    batchGet.mockResolvedValue([]);
+    let ids = ["a"];
+    const { rerender } = renderHook(() => useGovernanceAttentionTitles(ids), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(batchGet).toHaveBeenCalledTimes(1));
+
+    ids = ["a", "b"];
+    rerender();
+    await waitFor(() => expect(batchGet).toHaveBeenCalledTimes(2));
+    expect(batchGet).toHaveBeenLastCalledWith(["a", "b"]);
+  });
+
+  it("does not ask when there is nothing to look up or on a cloud backend", async () => {
+    renderHook(() => useGovernanceAttentionTitles([]), {
+      wrapper: makeWrapper(),
+    });
+    backendMock.current = {
+      backend: { id: "cloud-1", kind: "cloud", connectionRevision: 0 },
+      orgId: null,
+    };
+    renderHook(() => useGovernanceAttentionTitles(["a"]), {
+      wrapper: makeWrapper(),
+    });
+
+    await Promise.resolve();
+    expect(batchGet).not.toHaveBeenCalled();
+  });
+
+  it("leaves the titles unknown when the lookup fails", async () => {
+    batchGet.mockRejectedValue(new Error("boom"));
+    const { result } = renderHook(() => useGovernanceAttentionTitles(["a"]), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.data).toBeUndefined();
+  });
+});
+
+describe("normalizeConversationId", () => {
+  it("makes the spellings of one id equal", () => {
+    expect(
+      normalizeConversationId("AAAAAAAA-0000-0000-0000-000000000000"),
+    ).toBe(normalizeConversationId("aaaaaaaa000000000000000000000000"));
   });
 });

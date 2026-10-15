@@ -41650,5 +41650,39 @@
     "uk": "This conversation needs attention for a reason this app does not recognise ({{reason}}). Use only the actions offered below, and check the details at central first.",
     "zh-CN": "This conversation needs attention for a reason this app does not recognise ({{reason}}). Use only the actions offered below, and check the details at central first.",
     "zh-TW": "這個對話需要處理，但這個程式不認得原因（{{reason}}）。請只使用下方提供的動作，並先到中央確認細節。"
+  },
+  "GOVERNANCE$ATTENTION_OPEN_CONVERSATION": {
+    "ar": "Open conversation",
+    "ca": "Open conversation",
+    "de": "Open conversation",
+    "en": "Open conversation",
+    "es": "Open conversation",
+    "fr": "Open conversation",
+    "it": "Open conversation",
+    "ja": "Open conversation",
+    "ko-KR": "Open conversation",
+    "no": "Open conversation",
+    "pt": "Open conversation",
+    "tr": "Open conversation",
+    "uk": "Open conversation",
+    "zh-CN": "Open conversation",
+    "zh-TW": "開啟對話"
+  },
+  "GOVERNANCE$ATTENTION_UNTITLED": {
+    "ar": "(no title)",
+    "ca": "(no title)",
+    "de": "(no title)",
+    "en": "(no title)",
+    "es": "(no title)",
+    "fr": "(no title)",
+    "it": "(no title)",
+    "ja": "(no title)",
+    "ko-KR": "(no title)",
+    "no": "(no title)",
+    "pt": "(no title)",
+    "tr": "(no title)",
+    "uk": "(no title)",
+    "zh-CN": "(no title)",
+    "zh-TW": "（沒有標題）"
   }
 }

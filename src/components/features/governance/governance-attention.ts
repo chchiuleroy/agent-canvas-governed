@@ -4,6 +4,17 @@ import type {
   GovernanceAttentionItem,
 } from "#/types/governance";
 
+const CONVERSATION_UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Whether an id from the server may be put into a route. A conversation the
+ * server really holds has a UUID; anything else (a stray directory name, "..")
+ * only ever gets its id shown, never a link.
+ */
+export const isConversationUuid = (id: string): boolean =>
+  CONVERSATION_UUID.test(id);
+
 /** The order buttons appear in; also the only actions the UI knows how to run. */
 const ACTION_ORDER: readonly GovernanceAttentionAction[] = [
   "retry",
