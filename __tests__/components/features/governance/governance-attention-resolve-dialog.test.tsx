@@ -296,6 +296,20 @@ describe("GovernanceAttentionResolveDialog outcome", () => {
     expect(screen.queryByTestId("governance-attention-outcome")).toBeNull();
   });
 
+  it("labels each choice with its own outcome, and says it is a statement in a name not verified", async () => {
+    setup("dismiss", WITH_OUTCOMES);
+    const expected: Record<string, string> = {
+      confirmed_executed: "GOVERNANCE$ATTENTION_OUTCOME_CONFIRMED_EXECUTED",
+      confirmed_not_executed:
+        "GOVERNANCE$ATTENTION_OUTCOME_CONFIRMED_NOT_EXECUTED",
+      inconclusive: "GOVERNANCE$ATTENTION_OUTCOME_INCONCLUSIVE",
+    };
+    Object.entries(expected).forEach(([value, label]) => {
+      expect(screen.getByRole("option", { name: label })).toHaveValue(value);
+    });
+    expect(screen.getByText("GOVERNANCE$ATTENTION_OUTCOME_HELP")).toBeVisible();
+  });
+
   it("starts as not stating anything, and then sends no outcome", async () => {
     mocks.resolveAttention.mockResolvedValue(OK);
     setup("dismiss", WITH_OUTCOMES);

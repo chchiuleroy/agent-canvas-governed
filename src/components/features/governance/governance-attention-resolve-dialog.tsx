@@ -88,7 +88,7 @@ export function GovernanceAttentionResolveDialog({
           expected_request_id: item.request_id,
           operator: cleanName,
           ...(trimmedNote.length > 0 ? { note: trimmedNote } : {}),
-          ...(outcome !== "" && outcomes.includes(outcome) ? { outcome } : {}),
+          ...(outcome !== "" ? { outcome } : {}),
         },
       },
       {
