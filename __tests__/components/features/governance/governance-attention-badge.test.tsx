@@ -6,8 +6,13 @@ import type { GovernanceAttentionItem } from "#/types/governance";
 
 const mocks = vi.hoisted(() => ({
   data: undefined as GovernanceAttentionItem[] | null | undefined,
+  titles: undefined as Record<string, string | null> | undefined,
+  navigate: vi.fn(),
 }));
+vi.mock("react-router", () => ({ useNavigate: () => mocks.navigate }));
 vi.mock("#/hooks/query/use-governance-attention", () => ({
+  normalizeConversationId: (id: string) => id.replaceAll("-", "").toLowerCase(),
+  useGovernanceAttentionTitles: () => ({ data: mocks.titles }),
   useGovernanceAttention: () => ({ data: mocks.data }),
   useResolveGovernanceAttention: () => ({
     mutate: vi.fn(),
@@ -38,6 +43,8 @@ const item = (over: Partial<GovernanceAttentionItem> = {}) => ({
 
 beforeEach(() => {
   mocks.data = undefined;
+  mocks.titles = undefined;
+  mocks.navigate.mockReset();
 });
 
 describe("GovernanceAttentionBadge", () => {
@@ -167,6 +174,64 @@ describe("the panel", () => {
     expect(screen.getByTestId("governance-attention-retry")).toBeVisible();
     expect(screen.getByTestId("governance-attention-dismiss")).toBeVisible();
     expect(screen.queryByTestId("governance-attention-abandon")).toBeNull();
+  });
+
+  it("shows the conversation's title and a way to open it when the server knows it", async () => {
+    mocks.data = [item()];
+    mocks.titles = { "11111111111111111111111111111111": "Fix the build" };
+    await open();
+
+    expect(screen.getByTestId("governance-attention-title")).toHaveTextContent(
+      "Fix the build",
+    );
+    await userEvent.click(screen.getByTestId("governance-attention-open"));
+    expect(mocks.navigate).toHaveBeenCalledWith(
+      "/conversations/11111111-1111-1111-1111-111111111111",
+    );
+    // leaving for the conversation closes the panel
+    expect(screen.queryByTestId("governance-attention-panel")).toBeNull();
+  });
+
+  it("says so when the conversation has no title", async () => {
+    mocks.data = [item()];
+    mocks.titles = { "11111111111111111111111111111111": null };
+    await open();
+    expect(screen.getByTestId("governance-attention-title")).toHaveTextContent(
+      "GOVERNANCE$ATTENTION_UNTITLED",
+    );
+  });
+
+  it("falls back to the id alone, with nothing to open, when no title is known", async () => {
+    mocks.data = [item()];
+    mocks.titles = {}; // looked up, but this conversation is not in the answer
+    await open();
+    expect(screen.queryByTestId("governance-attention-title")).toBeNull();
+    expect(screen.queryByTestId("governance-attention-open")).toBeNull();
+    expect(
+      screen.getByTestId("governance-attention-panel").textContent,
+    ).toContain("11111111-1111-1111-1111-111111111111");
+  });
+
+  it.each(["..", ".", "a/b", "x?y", "not-a-uuid"])(
+    "offers no link for an id that is not a UUID (%s), even when a title is known",
+    async (id) => {
+      mocks.data = [item({ conversation_id: id })];
+      mocks.titles = { [id.replaceAll("-", "").toLowerCase()]: "Some title" };
+      await open();
+      expect(screen.getByTestId("governance-attention-title")).toBeVisible();
+      expect(screen.queryByTestId("governance-attention-open")).toBeNull();
+    },
+  );
+
+  it("shows a hostile title as text, not markup", async () => {
+    const hostile = '<img src=x onerror="window.__pwned=2">';
+    mocks.data = [item()];
+    mocks.titles = { "11111111111111111111111111111111": hostile };
+    await open();
+
+    const panel = screen.getByTestId("governance-attention-panel");
+    expect(panel.querySelector("img")).toBeNull();
+    expect(panel.textContent).toContain(hostile);
   });
 
   it("opens the confirmation for the chosen action only", async () => {

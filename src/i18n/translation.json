@@ -41752,5 +41752,39 @@
     "uk": "Sent to central first, as a statement in your name (not verified). It does not change the approval. If central does not take it, nothing is changed here either.",
     "zh-CN": "Sent to central first, as a statement in your name (not verified). It does not change the approval. If central does not take it, nothing is changed here either.",
     "zh-TW": "會先以你的名字（未經驗證）送到中央作為說明，不會改變核准的狀態。若中央不接受，這裡也不會有任何變更。"
+  },
+  "GOVERNANCE$ATTENTION_OPEN_CONVERSATION": {
+    "ar": "Open conversation",
+    "ca": "Open conversation",
+    "de": "Open conversation",
+    "en": "Open conversation",
+    "es": "Open conversation",
+    "fr": "Open conversation",
+    "it": "Open conversation",
+    "ja": "Open conversation",
+    "ko-KR": "Open conversation",
+    "no": "Open conversation",
+    "pt": "Open conversation",
+    "tr": "Open conversation",
+    "uk": "Open conversation",
+    "zh-CN": "Open conversation",
+    "zh-TW": "開啟對話"
+  },
+  "GOVERNANCE$ATTENTION_UNTITLED": {
+    "ar": "(no title)",
+    "ca": "(no title)",
+    "de": "(no title)",
+    "en": "(no title)",
+    "es": "(no title)",
+    "fr": "(no title)",
+    "it": "(no title)",
+    "ja": "(no title)",
+    "ko-KR": "(no title)",
+    "no": "(no title)",
+    "pt": "(no title)",
+    "tr": "(no title)",
+    "uk": "(no title)",
+    "zh-CN": "(no title)",
+    "zh-TW": "（沒有標題）"
   }
 }
