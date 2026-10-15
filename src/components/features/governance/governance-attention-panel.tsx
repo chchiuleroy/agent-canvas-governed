@@ -1,8 +1,13 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
 import XMarkIcon from "#/icons/x-mark.svg?react";
+import {
+  normalizeConversationId,
+  useGovernanceAttentionTitles,
+} from "#/hooks/query/use-governance-attention";
 import { modalTitleLgMediumClassName } from "#/utils/modal-classes";
 import type {
   GovernanceAttentionAction,
@@ -23,6 +28,10 @@ interface Props {
 /** The list of parked records, each with the actions the server allows for it. */
 export function GovernanceAttentionPanel({ items, onClose }: Props) {
   const { t } = useTranslation("openhands");
+  const navigate = useNavigate();
+  const { data: titles } = useGovernanceAttentionTitles(
+    items.map((item) => item.conversation_id),
+  );
   const [selected, setSelected] = useState<{
     item: GovernanceAttentionItem;
     action: GovernanceAttentionAction;
@@ -66,12 +75,22 @@ export function GovernanceAttentionPanel({ items, onClose }: Props) {
           <ul className="mt-4 flex flex-col gap-4">
             {items.map((item) => {
               const reason = reasonText(item.reason);
+              const known =
+                titles?.[normalizeConversationId(item.conversation_id)];
               return (
                 <li
                   key={`${item.conversation_id}:${item.request_id ?? ""}`}
                   data-testid="governance-attention-item"
                   className="rounded-lg border border-[var(--oh-border)] p-3 text-sm"
                 >
+                  {known !== undefined ? (
+                    <p
+                      data-testid="governance-attention-title"
+                      className="break-words font-medium"
+                    >
+                      {known || t(I18nKey.GOVERNANCE$ATTENTION_UNTITLED)}
+                    </p>
+                  ) : null}
                   <p className="break-all text-xs text-muted">
                     {t(I18nKey.GOVERNANCE$ATTENTION_CONVERSATION)}:{" "}
                     {item.conversation_id}
@@ -84,6 +103,21 @@ export function GovernanceAttentionPanel({ items, onClose }: Props) {
                     </p>
                   ) : null}
                   <div className="mt-3 flex flex-wrap gap-2">
+                    {known !== undefined ? (
+                      <button
+                        type="button"
+                        data-testid="governance-attention-open"
+                        onClick={() => {
+                          navigate(
+                            `/conversations/${encodeURIComponent(item.conversation_id)}`,
+                          );
+                          onClose();
+                        }}
+                        className="rounded-lg border border-[var(--oh-border)] px-3 py-1.5 text-xs text-white hover:bg-surface-raised"
+                      >
+                        {t(I18nKey.GOVERNANCE$ATTENTION_OPEN_CONVERSATION)}
+                      </button>
+                    ) : null}
                     {visibleActions(item).map((action) => (
                       <button
                         key={action}
