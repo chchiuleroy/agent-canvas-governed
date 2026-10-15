@@ -9,16 +9,19 @@ import { modalTitleLgMediumClassName } from "#/utils/modal-classes";
 import type {
   GovernanceAttentionAction,
   GovernanceAttentionItem,
+  GovernanceAttentionOutcome,
 } from "#/types/governance";
 import {
   ACTION_EFFECT,
   ACTION_LABEL,
+  OUTCOME_LABEL,
   classifyResolveFailure,
   cleanOperator,
   reasonText,
   rememberedOperator,
   rememberOperator,
   type ResolveFailure,
+  visibleOutcomes,
 } from "./governance-attention";
 
 const ERROR_TEXT: Record<ResolveFailure, I18nKey> = {
@@ -48,6 +51,8 @@ export function GovernanceAttentionResolveDialog({
   const resolve = useResolveGovernanceAttention();
   const [operator, setOperator] = useState(rememberedOperator);
   const [note, setNote] = useState("");
+  const [outcome, setOutcome] = useState<GovernanceAttentionOutcome | "">("");
+  const outcomes = action === "dismiss" ? visibleOutcomes(item) : [];
   const [failure, setFailure] = useState<{
     kind: ResolveFailure;
     code: string;
@@ -83,6 +88,7 @@ export function GovernanceAttentionResolveDialog({
           expected_request_id: item.request_id,
           operator: cleanName,
           ...(trimmedNote.length > 0 ? { note: trimmedNote } : {}),
+          ...(outcome !== "" && outcomes.includes(outcome) ? { outcome } : {}),
         },
       },
       {
@@ -179,6 +185,33 @@ export function GovernanceAttentionResolveDialog({
                 className="rounded-lg border border-[var(--oh-border)] bg-transparent px-3 py-2 text-sm"
               />
             </label>
+            {outcomes.length > 0 ? (
+              <label className="flex flex-col gap-1 text-sm">
+                {t(I18nKey.GOVERNANCE$ATTENTION_OUTCOME_LABEL)}
+                <select
+                  data-testid="governance-attention-outcome"
+                  value={outcome}
+                  onChange={(e) =>
+                    setOutcome(
+                      e.target.value as GovernanceAttentionOutcome | "",
+                    )
+                  }
+                  className="rounded-lg border border-[var(--oh-border)] bg-transparent px-3 py-2 text-sm"
+                >
+                  <option value="">
+                    {t(I18nKey.GOVERNANCE$ATTENTION_OUTCOME_NONE)}
+                  </option>
+                  {outcomes.map((value) => (
+                    <option key={value} value={value}>
+                      {t(OUTCOME_LABEL[value])}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-xs text-muted">
+                  {t(I18nKey.GOVERNANCE$ATTENTION_OUTCOME_HELP)}
+                </span>
+              </label>
+            ) : null}
             {failure ? (
               <p
                 role="alert"

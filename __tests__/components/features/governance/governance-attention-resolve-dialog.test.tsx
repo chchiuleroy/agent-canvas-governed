@@ -260,3 +260,87 @@ describe("GovernanceAttentionResolveDialog", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("GovernanceAttentionResolveDialog outcome", () => {
+  const WITH_OUTCOMES: GovernanceAttentionItem = {
+    ...ITEM,
+    reason: "report_failed",
+    allowed_outcomes: [
+      "confirmed_executed",
+      "confirmed_not_executed",
+      "inconclusive",
+    ],
+  };
+  const choose = (value: string) =>
+    userEvent.selectOptions(
+      screen.getByTestId("governance-attention-outcome"),
+      value,
+    );
+
+  it("offers the choice only to a dismiss, and only if the server allows outcomes", () => {
+    setup("dismiss", WITH_OUTCOMES);
+    expect(
+      screen.getByTestId("governance-attention-outcome"),
+    ).toBeInTheDocument();
+    cleanup();
+
+    setup("dismiss", ITEM); // no allowed_outcomes
+    expect(screen.queryByTestId("governance-attention-outcome")).toBeNull();
+    cleanup();
+
+    // the server would refuse an outcome with these, so the choice is not shown
+    setup("retry", WITH_OUTCOMES);
+    expect(screen.queryByTestId("governance-attention-outcome")).toBeNull();
+    cleanup();
+    setup("abandon", WITH_OUTCOMES);
+    expect(screen.queryByTestId("governance-attention-outcome")).toBeNull();
+  });
+
+  it("starts as not stating anything, and then sends no outcome", async () => {
+    mocks.resolveAttention.mockResolvedValue(OK);
+    setup("dismiss", WITH_OUTCOMES);
+    expect(screen.getByTestId("governance-attention-outcome")).toHaveValue("");
+    await typeOperator("ada");
+    await typeNote("why");
+    await userEvent.click(confirm());
+
+    await waitFor(() => expect(mocks.resolveAttention).toHaveBeenCalled());
+    expect(mocks.resolveAttention.mock.calls[0][1]).not.toHaveProperty(
+      "outcome",
+    );
+  });
+
+  it("sends the chosen outcome with the dismiss", async () => {
+    mocks.resolveAttention.mockResolvedValue(OK);
+    setup("dismiss", WITH_OUTCOMES);
+    await choose("confirmed_not_executed");
+    await typeOperator("ada");
+    await typeNote("checked at central");
+    await userEvent.click(confirm());
+
+    await waitFor(() => expect(mocks.resolveAttention).toHaveBeenCalled());
+    expect(mocks.resolveAttention).toHaveBeenCalledWith(ITEM.conversation_id, {
+      action: "dismiss",
+      expected_request_id: "req-1",
+      operator: "ada",
+      note: "checked at central",
+      outcome: "confirmed_not_executed",
+    });
+  });
+
+  it("shows central refusing the statement as a central problem, and stays open", async () => {
+    mocks.resolveAttention.mockRejectedValue(
+      await refusal(424, "central_failed"),
+    );
+    setup("dismiss", WITH_OUTCOMES);
+    await choose("confirmed_executed");
+    await typeOperator("ada");
+    await typeNote("why");
+    await userEvent.click(confirm());
+
+    expect(
+      await screen.findByTestId("governance-attention-error"),
+    ).toHaveAttribute("data-kind", "central");
+    expect(confirm()).toBeEnabled();
+  });
+});

@@ -5,6 +5,7 @@ import {
   cleanOperator,
   reasonText,
   rememberedOperator,
+  visibleOutcomes,
   rememberOperator,
   visibleActions,
 } from "#/components/features/governance/governance-attention";
@@ -135,5 +136,32 @@ describe("the remembered operator", () => {
     });
     expect(rememberedOperator()).toBe("");
     expect(() => rememberOperator("ada")).not.toThrow();
+  });
+});
+
+describe("visibleOutcomes", () => {
+  it("offers only what the server allows, in a fixed order", () => {
+    expect(
+      visibleOutcomes({
+        allowed_outcomes: ["inconclusive", "confirmed_executed"],
+      }),
+    ).toEqual(["confirmed_executed", "inconclusive"]);
+  });
+
+  it("offers nothing from an older server or where the action cannot have run", () => {
+    expect(visibleOutcomes({})).toEqual([]);
+    expect(visibleOutcomes({ allowed_outcomes: [] })).toEqual([]);
+  });
+
+  it("ignores an outcome this UI does not know", () => {
+    expect(
+      visibleOutcomes({ allowed_outcomes: ["probably_ran", "inconclusive"] }),
+    ).toEqual(["inconclusive"]);
+  });
+});
+
+describe("classifyResolveFailure for an outcome", () => {
+  it("treats an outcome the record no longer allows as a stale view", () => {
+    expect(classifyResolveFailure(409, "outcome_not_allowed")).toBe("stale");
   });
 });
