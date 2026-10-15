@@ -58,6 +58,7 @@ export function GovernanceAttentionResolveDialog({
     code: string;
   } | null>(null);
   const [stillWaiting, setStillWaiting] = useState(false);
+  const [auditMissing, setAuditMissing] = useState(false);
 
   const cleanName = cleanOperator(operator);
   const noteRequired = action === "dismiss";
@@ -95,6 +96,7 @@ export function GovernanceAttentionResolveDialog({
         onSuccess: (result) => {
           rememberOperator(cleanName);
           setStillWaiting(result.conversation_still_waiting === true);
+          setAuditMissing(result.central_audit === "not_recorded");
         },
         onError: (error) => {
           const status =
@@ -154,6 +156,14 @@ export function GovernanceAttentionResolveDialog({
             {stillWaiting ? (
               <p className="mt-2 text-amber-400">
                 {t(I18nKey.GOVERNANCE$ATTENTION_STILL_WAITING)}
+              </p>
+            ) : null}
+            {auditMissing ? (
+              <p
+                className="mt-2 text-amber-400"
+                data-testid="governance-attention-audit-missing"
+              >
+                {t(I18nKey.GOVERNANCE$ATTENTION_AUDIT_NOT_RECORDED)}
               </p>
             ) : null}
           </div>

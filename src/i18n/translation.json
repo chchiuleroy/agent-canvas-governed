@@ -41396,6 +41396,23 @@
     "zh-CN": "The conversation is still waiting for confirmation of this action. Reject it before it can move on.",
     "zh-TW": "對話仍在等待這個動作的確認。需先拒絕它，對話才能繼續。"
   },
+  "GOVERNANCE$ATTENTION_AUDIT_NOT_RECORDED": {
+    "ar": "Central was not told what you did, so its audit trail has no entry for this. The action itself is done.",
+    "ca": "Central was not told what you did, so its audit trail has no entry for this. The action itself is done.",
+    "de": "Central was not told what you did, so its audit trail has no entry for this. The action itself is done.",
+    "en": "Central was not told what you did, so its audit trail has no entry for this. The action itself is done.",
+    "es": "Central was not told what you did, so its audit trail has no entry for this. The action itself is done.",
+    "fr": "Central was not told what you did, so its audit trail has no entry for this. The action itself is done.",
+    "it": "Central was not told what you did, so its audit trail has no entry for this. The action itself is done.",
+    "ja": "Central was not told what you did, so its audit trail has no entry for this. The action itself is done.",
+    "ko-KR": "Central was not told what you did, so its audit trail has no entry for this. The action itself is done.",
+    "no": "Central was not told what you did, so its audit trail has no entry for this. The action itself is done.",
+    "pt": "Central was not told what you did, so its audit trail has no entry for this. The action itself is done.",
+    "tr": "Central was not told what you did, so its audit trail has no entry for this. The action itself is done.",
+    "uk": "Central was not told what you did, so its audit trail has no entry for this. The action itself is done.",
+    "zh-CN": "Central was not told what you did, so its audit trail has no entry for this. The action itself is done.",
+    "zh-TW": "中央沒有收到你做了什麼，所以它的稽核紀錄沒有這一筆；動作本身已經完成。"
+  },
   "GOVERNANCE$ATTENTION_ERROR_STALE": {
     "ar": "This item changed after you opened the list. The list has been refreshed: check it and try again.",
     "ca": "This item changed after you opened the list. The list has been refreshed: check it and try again.",

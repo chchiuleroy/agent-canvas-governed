@@ -70,5 +70,11 @@ export interface GovernanceResolveResponse {
   request_id: string;
   new_state: string;
   central_step: string;
+  /**
+   * Whether central was told what the operator did (an audit event). Best
+   * effort: the action has happened either way. Absent from an older
+   * agent-server.
+   */
+  central_audit?: "recorded" | "not_recorded" | "not_applicable";
   conversation_still_waiting: boolean | null;
 }
