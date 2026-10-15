@@ -2,6 +2,7 @@ import { I18nKey } from "#/i18n/declaration";
 import type {
   GovernanceAttentionAction,
   GovernanceAttentionItem,
+  GovernanceAttentionOutcome,
 } from "#/types/governance";
 
 const CONVERSATION_UUID =
@@ -33,6 +34,31 @@ export function visibleActions(
 ): GovernanceAttentionAction[] {
   return ACTION_ORDER.filter((action) => item.allowed_actions.includes(action));
 }
+
+const OUTCOME_ORDER: readonly GovernanceAttentionOutcome[] = [
+  "confirmed_executed",
+  "confirmed_not_executed",
+  "inconclusive",
+];
+
+/**
+ * The outcomes to offer with a dismiss: what the SERVER allows for this record
+ * (none from an older server, and none where the action cannot have run),
+ * narrowed to the ones this UI can send.
+ */
+export function visibleOutcomes(
+  item: Pick<GovernanceAttentionItem, "allowed_outcomes">,
+): GovernanceAttentionOutcome[] {
+  const allowed = item.allowed_outcomes ?? [];
+  return OUTCOME_ORDER.filter((outcome) => allowed.includes(outcome));
+}
+
+export const OUTCOME_LABEL: Record<GovernanceAttentionOutcome, I18nKey> = {
+  confirmed_executed: I18nKey.GOVERNANCE$ATTENTION_OUTCOME_CONFIRMED_EXECUTED,
+  confirmed_not_executed:
+    I18nKey.GOVERNANCE$ATTENTION_OUTCOME_CONFIRMED_NOT_EXECUTED,
+  inconclusive: I18nKey.GOVERNANCE$ATTENTION_OUTCOME_INCONCLUSIVE,
+};
 
 const REASON_TEXT: Record<string, I18nKey> = {
   claim_failed: I18nKey.GOVERNANCE$ATTENTION_REASON_CLAIM_FAILED,
@@ -111,7 +137,8 @@ export function classifyResolveFailure(
     status === 404 ||
     errorCode === "state_changed" ||
     errorCode === "request_id_mismatch" ||
-    errorCode === "action_not_allowed"
+    errorCode === "action_not_allowed" ||
+    errorCode === "outcome_not_allowed"
   ) {
     return "stale";
   }

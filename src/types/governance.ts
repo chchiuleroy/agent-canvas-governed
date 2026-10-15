@@ -28,6 +28,12 @@ export interface GovernanceStatus {
  */
 export type GovernanceAttentionAction = "retry" | "abandon" | "dismiss";
 
+/** What an operator who looked at central says happened to the action. */
+export type GovernanceAttentionOutcome =
+  | "confirmed_executed"
+  | "confirmed_not_executed"
+  | "inconclusive";
+
 export interface GovernanceAttentionItem {
   conversation_id: string;
   /** `null` for a record parked before reasons were recorded. */
@@ -40,6 +46,11 @@ export interface GovernanceAttentionItem {
   last_attempt_at: string | null;
   /** What the server allows for this record; the UI offers nothing else. */
   allowed_actions: string[];
+  /**
+   * The outcomes that may accompany a dismiss, because the action may have run.
+   * Absent from an older agent-server, and empty where there is nothing to say.
+   */
+  allowed_outcomes?: string[];
 }
 
 export interface GovernanceResolveRequest {
@@ -49,6 +60,8 @@ export interface GovernanceResolveRequest {
   note?: string;
   /** Self-declared, not authenticated. */
   operator: string;
+  /** Dismiss only: filed with central first, as a statement in the operator's name. */
+  outcome?: GovernanceAttentionOutcome;
 }
 
 export interface GovernanceResolveResponse {
