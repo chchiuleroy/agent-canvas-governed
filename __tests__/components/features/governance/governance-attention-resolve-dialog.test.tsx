@@ -187,6 +187,43 @@ describe("GovernanceAttentionResolveDialog", () => {
     ).toBeVisible();
   });
 
+  it("says so when central was not told what the operator did", async () => {
+    mocks.resolveAttention.mockResolvedValue({
+      ...OK,
+      central_audit: "not_recorded",
+    });
+    setup("dismiss");
+    await typeOperator("ada");
+    await typeNote("why");
+    await userEvent.click(confirm());
+    expect(
+      await screen.findByTestId("governance-attention-audit-missing"),
+    ).toBeVisible();
+    expect(
+      screen.getByText("GOVERNANCE$ATTENTION_AUDIT_NOT_RECORDED"),
+    ).toBeVisible();
+    // the action is done: the dialog still says so
+    expect(screen.getByText("GOVERNANCE$ATTENTION_DONE")).toBeVisible();
+  });
+
+  it.each(["recorded", "not_applicable", undefined])(
+    "stays quiet about the audit when it is %s",
+    async (audit) => {
+      mocks.resolveAttention.mockResolvedValue({
+        ...OK,
+        ...(audit === undefined ? {} : { central_audit: audit }),
+      });
+      setup("dismiss");
+      await typeOperator("ada");
+      await typeNote("why");
+      await userEvent.click(confirm());
+      await screen.findByText("GOVERNANCE$ATTENTION_DONE");
+      expect(
+        screen.queryByTestId("governance-attention-audit-missing"),
+      ).toBeNull();
+    },
+  );
+
   it("treats a stale refusal as stale, refreshes the list and changes nothing else", async () => {
     mocks.resolveAttention.mockRejectedValue(
       await refusal(409, "request_id_mismatch"),
